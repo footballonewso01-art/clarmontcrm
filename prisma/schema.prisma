@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  WORKER
+  AGENCY
+}
+
+enum WorkerStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  hashedPassword String
+  role           UserRole @default(ADMIN)
+  workerId       String?  @unique
+  agencyId       String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  worker Worker? @relation(fields: [workerId], references: [id])
+  agency Agency? @relation(fields: [agencyId], references: [id])
+}
+
+model Worker {
+  id        String       @id @default(cuid())
+  name      String
+  telegram  String?
+  status    WorkerStatus @default(ACTIVE)
+  isDeleted Boolean      @default(false)
+  ratePerSubscriber Decimal @default(2.00)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user          User?
+  trackingLinks TrackingLink[]
+  conversions   Conversion[]
+  payouts       PayoutWorker[]
+}
+
+model Model {
+  id        String   @id @default(cuid())
+  name      String
+  agencyId  String
+  isDeleted Boolean  @default(false)
+
+  agency        Agency         @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  trackingLinks TrackingLink[]
+  conversions   Conversion[]
+  payouts       PayoutWorker[]
+
+  @@index([agencyId])
+}
+
+model Agency {
+  id                String  @id @default(cuid())
+  name              String
+  ratePerSubscriber Decimal @default(1.00)
+  isDeleted         Boolean @default(false)
+
+  user    User?
+  models  Model[]
+  payouts PayoutAgency[]
+}
+
+model TrackingLink {
+  id        String   @id @default(cuid())
+  workerId  String
+  modelId   String
+  name      String?
+  url       String
+  createdAt DateTime @default(now())
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  model  Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([workerId, modelId])
+  @@index([workerId])
+  @@index([modelId])
+}
+
+model Conversion {
+  id               String   @id @default(cuid())
+  workerId         String
+  modelId          String
+  subscribersTotal Int
+  revenueTotal     Decimal
+  date             DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  model  Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([workerId, date])
+  @@index([modelId, date])
+}
+
+model PayoutWorker {
+  id              String   @id @default(cuid())
+  workerId        String
+  modelId         String
+  amount          Decimal
+  subscribersFrom Int
+  subscribersTo   Int
+  note            String?
+  date            DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  model  Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([workerId, date])
+}
+
+model PayoutAgency {
+  id        String   @id @default(cuid())
+  agencyId  String
+  amount    Decimal
+  note      String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId, date])
+}
