@@ -49,12 +49,21 @@ export async function recordConversion(formData: FormData) {
     return { error: parsed.error.issues[0].message };
   }
 
+  const model = await db.model.findUnique({
+    where: { id: parsed.data.modelId },
+    include: { agency: true }
+  });
+  if (!model) return { error: "Модель не найдена" };
+  
+  const rate = Number(model.agency.ratePerSubscriber);
+  const revenueTotal = parsed.data.subscribersTotal * rate;
+
   await db.conversion.create({
     data: {
       workerId: parsed.data.workerId,
       modelId: parsed.data.modelId,
       subscribersTotal: parsed.data.subscribersTotal,
-      revenueTotal: parsed.data.revenueTotal,
+      revenueTotal,
     },
   });
 

@@ -50,10 +50,6 @@ export function ConversionActions({ workers, models }: ConversionActionsProps) {
             <label className="label">Общее кол-во подписчиков</label>
             <input name="subscribersTotal" type="number" min="0" required className="input" placeholder="0" />
           </div>
-          <div className="form-group">
-            <label className="label">Общий доход ($)</label>
-            <input name="revenueTotal" type="number" step="0.01" min="0" required className="input" placeholder="0.00" />
-          </div>
           {error && <div className="error-text">{error}</div>}
           <div className="modal-actions">
             <button type="button" onClick={modal.close} className="btn btn-secondary">Отмена</button>
